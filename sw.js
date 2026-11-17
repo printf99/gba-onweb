@@ -1,8 +1,9 @@
 // Offline support.
 // - App pages: network first (updates show up), cache as fallback.
 // - Pinned emulator files in ./emulatorjs never change: cache first.
-const SHELL = "gba-shell-v3";
+const SHELL = "gba-shell-v4";
 const EMU = "gba-emu-4.2.3";
+const FONTS = "gba-fonts-v1";
 const SHELL_FILES = [
   "./", "./index.html", "./manifest.webmanifest", "./covers.json",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png",
@@ -14,7 +15,7 @@ self.addEventListener("install", e => {
 
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== SHELL && k !== EMU).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k !== SHELL && k !== EMU && k !== FONTS).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
@@ -22,6 +23,17 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  // Web fonts: cache first so the app keeps its look offline.
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
+    e.respondWith(caches.open(FONTS).then(async cache => {
+      const hit = await cache.match(req);
+      if (hit) return hit;
+      const res = await fetch(req);
+      if (res.ok || res.type === "opaque") cache.put(req, res.clone());
+      return res;
+    }));
+    return;
+  }
   if (url.origin !== location.origin) return;   // GitHub API, cover images: straight to network
 
   if (url.pathname.includes("/emulatorjs/")) {
