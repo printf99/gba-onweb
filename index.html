@@ -4,8 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>GBA on Web</title>
-<meta name="theme-color" content="#0e0b1f" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#eef0fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060d" id="theme-color">
+<script>
+  // Theme before first paint: "dark" (default) | "light" | "auto"
+  (function () {
+    let t = "dark";
+    try { t = localStorage.getItem("gba-theme") || "dark"; } catch (e) {}
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,26 +26,49 @@
 <meta name="apple-mobile-web-app-title" content="GBA">
 <style>
   /* ---------- tokens ---------- */
+  /* Dark (default): deep, dark-tinted glass over a dim aurora */
   :root {
     color-scheme: dark;
-    --bg: #0e0b1f;
-    --text: #f5f4fb;
-    --text-2: rgba(245, 244, 251, .62);
-    --text-3: rgba(245, 244, 251, .42);
+    --bg: #07060d;
+    --text: #f4f3fa;
+    --text-2: rgba(244, 243, 250, .6);
+    --text-3: rgba(244, 243, 250, .38);
     --tint: #a78bfa;
-    --tint-strong: #8b5cf6;
+    --tint-strong: #7c3aed;
     --danger: #ff6b6b;
-    --glass-fill: linear-gradient(145deg, rgba(255,255,255,.16), rgba(255,255,255,.05));
-    --glass-fill-strong: linear-gradient(145deg, rgba(255,255,255,.22), rgba(255,255,255,.09));
-    --glass-edge: rgba(255,255,255,.22);
-    --glass-hi: rgba(255,255,255,.45);
-    --glass-shadow: 0 12px 40px rgba(0,0,0,.35);
-    --blob-1: #7c3aed; --blob-2: #ec4899; --blob-3: #06b6d4; --blob-4: #f59e0b;
-    --blob-opacity: .55;
+    --glass-fill: linear-gradient(145deg, rgba(38, 34, 58, .62), rgba(16, 14, 28, .52));
+    --glass-fill-strong: linear-gradient(160deg, rgba(34, 30, 52, .9), rgba(14, 12, 24, .86));
+    --glass-edge: rgba(255,255,255,.1);
+    --glass-hi: rgba(255,255,255,.16);
+    --glass-shadow: 0 16px 44px rgba(0,0,0,.55);
+    --scroll-thumb: rgba(255,255,255,.22);
+    --scroll-thumb-hover: rgba(255,255,255,.38);
+    --blob-1: #6d28d9; --blob-2: #be185d; --blob-3: #0e7490; --blob-4: #b45309;
+    --blob-opacity: .32;
     --radius-xl: 30px; --radius-l: 22px; --radius-m: 16px;
   }
+  /* Light: picked by the user, or "auto" on a light system */
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #eef0fb;
+    --text: #14122b;
+    --text-2: rgba(20, 18, 43, .62);
+    --text-3: rgba(20, 18, 43, .42);
+    --tint: #7c3aed;
+    --tint-strong: #6d28d9;
+    --danger: #e5484d;
+    --glass-fill: linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,255,255,.42));
+    --glass-fill-strong: linear-gradient(145deg, rgba(255,255,255,.88), rgba(255,255,255,.66));
+    --glass-edge: rgba(255,255,255,.85);
+    --glass-hi: rgba(255,255,255,1);
+    --glass-shadow: 0 12px 36px rgba(60, 50, 120, .16);
+    --scroll-thumb: rgba(20,18,43,.22);
+    --scroll-thumb-hover: rgba(20,18,43,.4);
+    --blob-1: #7c3aed; --blob-2: #ec4899; --blob-3: #06b6d4; --blob-4: #f59e0b;
+    --blob-opacity: .45;
+  }
   @media (prefers-color-scheme: light) {
-    :root {
+    :root[data-theme="auto"] {
       color-scheme: light;
       --bg: #eef0fb;
       --text: #14122b;
@@ -48,12 +78,26 @@
       --tint-strong: #6d28d9;
       --danger: #e5484d;
       --glass-fill: linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,255,255,.42));
-      --glass-fill-strong: linear-gradient(145deg, rgba(255,255,255,.85), rgba(255,255,255,.6));
+      --glass-fill-strong: linear-gradient(145deg, rgba(255,255,255,.88), rgba(255,255,255,.66));
       --glass-edge: rgba(255,255,255,.85);
       --glass-hi: rgba(255,255,255,1);
       --glass-shadow: 0 12px 36px rgba(60, 50, 120, .16);
+      --scroll-thumb: rgba(20,18,43,.22);
+      --scroll-thumb-hover: rgba(20,18,43,.4);
+      --blob-1: #7c3aed; --blob-2: #ec4899; --blob-3: #06b6d4; --blob-4: #f59e0b;
       --blob-opacity: .45;
     }
+  }
+
+  /* ---------- scrollbars: thin glass pill, clear of the rounded corners ---------- */
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: transparent; margin: 28px 0; }
+  ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 999px;
+    border: 4px solid transparent; background-clip: padding-box; min-height: 40px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); border-width: 3px; background-clip: padding-box; }
+  ::-webkit-scrollbar-button, ::-webkit-scrollbar-corner { display: none; }
+  @supports not selector(::-webkit-scrollbar) {
+    * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -234,6 +278,15 @@
     color: var(--text); background: rgba(127,127,127,.12); border: 1px solid var(--glass-edge); outline: 0; }
   .field input:focus { border-color: var(--tint); }
   .field .btn { height: 44px; padding: 0 16px; font-size: 15px; }
+  .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 14px; }
+  .segmented button { height: 40px; border-radius: 10px; font-size: 15px; font-weight: 600; color: var(--text-2); transition: background .2s, color .2s; }
+  .segmented button.on { color: #fff; background: linear-gradient(180deg, var(--tint), var(--tint-strong));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 14px rgba(124,58,237,.35); }
+  .cloud-badge { position: absolute; left: 8px; bottom: 8px; z-index: 2; height: 28px; padding: 0 10px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: #fff;
+    background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.3); }
+  .cloud-badge svg { font-size: 15px; }
+  .game.cloud-only .cover img, .game.cloud-only .cover .glyph { filter: saturate(.7) brightness(.8); }
   ol.steps { margin: 8px 6px 0; padding-left: 20px; color: var(--text-2); font-size: 13px; line-height: 1.7; }
 
   /* cloud status pill */
@@ -368,7 +421,11 @@
       </button>
       <button class="item danger" id="gs-delete">
         <span class="ico"><svg><use href="#i-trash"/></svg></span>
-        <span class="grow" id="gs-delete-text">ลบออกจากคลัง<small>เซฟในเกมยังเก็บไว้</small></span>
+        <span class="grow" id="gs-delete-text"></span>
+      </button>
+      <button class="item danger" id="gs-delete-cloud">
+        <span class="ico"><svg><use href="#i-cloud"/></svg></span>
+        <span class="grow" id="gs-delete-cloud-text"></span>
       </button>
     </div>
   </div>
@@ -383,7 +440,14 @@
       <button class="close glass" data-close aria-label="ปิด"><svg><use href="#i-close"/></svg></button>
     </div>
 
-    <div class="group-label">เซฟบนคลาวด์ (GitHub ส่วนตัว · ฟรี)</div>
+    <div class="group-label">ธีม</div>
+    <div class="segmented glass" id="theme-picker">
+      <button data-theme-opt="dark">มืด</button>
+      <button data-theme-opt="auto">ตามระบบ</button>
+      <button data-theme-opt="light">สว่าง</button>
+    </div>
+
+    <div class="group-label">เกมและเซฟบนคลาวด์ (GitHub ส่วนตัว · ฟรี)</div>
     <div class="group glass">
       <div class="item">
         <span class="ico" style="background:#6366f1"><svg><use href="#i-cloud"/></svg></span>
@@ -404,7 +468,7 @@
       <li>Permissions → Repository → <b>Contents: Read and write</b></li>
       <li>Expiration: เลือกนานที่สุด แล้วกด Generate และคัดลอกมาวางด้านบน</li>
     </ol>
-    <p class="note">เซฟในเกมจะอัปโหลดอัตโนมัติทุกครั้งที่เปลี่ยน และเก็บประวัติทุกเวอร์ชัน เปิดเกมบนเครื่องไหนก็ได้เซฟล่าสุด · ใช้เมนู Save ในเกมเป็นหลัก (save state ไม่ซิงก์)</p>
+    <p class="note">เกมที่เพิ่มจะอัปโหลดขึ้นคลาวด์ให้ เครื่องอื่นเห็นในคลังและแตะเพื่อดาวน์โหลดได้เลย · เซฟในเกมอัปโหลดอัตโนมัติทุกครั้งที่เปลี่ยน เก็บประวัติทุกเวอร์ชัน · ใช้เมนู Save ในเกมเป็นหลัก (save state ไม่ซิงก์)</p>
 
     <div id="install-group">
       <div class="group-label">ติดตั้งเป็นแอป</div>
@@ -506,6 +570,7 @@ function coverHTML(g, withMore) {
     ${art ? `<img src="${art}" alt="" loading="lazy">` : `<span class="glyph">${esc(initials(name))}</span>`}
     <span class="badge">${system(g.name)}</span>
     ${withMore ? `<span class="more" data-more aria-label="ตัวเลือก"><svg><use href="#i-more"/></svg></span>` : ""}
+    ${withMore && !g.blob ? `<span class="cloud-badge"><svg><use href="#i-cloud"/></svg>คลาวด์</span>` : ""}
   </div>`;
 }
 function ago(t) {
@@ -518,6 +583,13 @@ function ago(t) {
   return "เล่นเมื่อ " + new Date(t).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
 }
 const size = b => (b / 1048576).toFixed(1) + " MB";
+const gameSize = g => g.blob?.size || g.remote?.size || 0;
+// Update only some fields of a stored game, so parallel tasks (covers, uploads, play time) don't overwrite each other.
+async function patchGame(g, fields) {
+  Object.assign(g, fields);
+  const cur = await idb.get("roms", g.name).catch(() => null);
+  await idb.put("roms", g.name, { ...(cur || g), ...fields }).catch(e => console.warn(e));
+}
 let toastTimer;
 function toast(msg) {
   const t = $("toast"); t.textContent = msg; t.classList.add("show");
@@ -564,9 +636,8 @@ async function fetchMissingCovers() {
         const url = `https://raw.githubusercontent.com/libretro-thumbnails/${THUMB_REPOS[sys]}/master/Named_Boxarts/${encodeURIComponent(match + ".png")}`;
         const r = await fetch(url);
         if (!r.ok) throw 0;
-        g.cover = await r.blob();
-      } catch { g.coverMiss = true; }
-      await idb.put("roms", g.name, g).catch(() => {});
+        await patchGame(g, { cover: await r.blob() });
+      } catch { await patchGame(g, { coverMiss: true }); }
       render();
     }
   } catch (e) { console.warn("covers unavailable", e); }   // offline: try again next launch
@@ -608,10 +679,10 @@ function render() {
   grid.innerHTML = "";
   for (const g of list) {
     const card = document.createElement("button");
-    card.className = "game pressable";
+    card.className = "game pressable" + (g.blob ? "" : " cloud-only");
     card.innerHTML = `${coverHTML(g, true)}
       <div class="name">${esc(prettyName(g.name))}</div>
-      <div class="meta">${ago(g.lastPlayed)}</div>`;
+      <div class="meta">${g.blob ? ago(g.lastPlayed) : "แตะเพื่อดาวน์โหลด · " + size(gameSize(g))}</div>`;
     card.onclick = e => e.target.closest("[data-more]") ? openGameSheet(g) : play(g);
     card.oncontextmenu = e => { e.preventDefault(); openGameSheet(g); };
     grid.append(card);
@@ -640,10 +711,11 @@ async function addFiles(files) {
   }
   for (const f of roms) {
     const prev = games.find(g => g.name === f.name);
-    const rec = { name: f.name, blob: f, added: prev?.added || Date.now(), lastPlayed: prev?.lastPlayed || 0 };
+    const rec = { ...prev, name: f.name, blob: f, added: prev?.added || Date.now(), lastPlayed: prev?.lastPlayed || 0, cloudDeleted: false };
     try { await idb.put("roms", f.name, rec); } catch (e) { console.warn(e); }
   }
   await loadLibrary();
+  Cloud.syncLibrary();   // upload new games in the background (if cloud is connected)
   if (roms.length === 1) play(games.find(g => g.name === roms[0].name));   // one game: start right away
   else toast(`เพิ่ม ${roms.length} เกมเข้าคลังแล้ว`);
 }
@@ -667,12 +739,24 @@ document.querySelectorAll(".scrim").forEach(s => s.addEventListener("click", e =
 }));
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheets(); });
 
-let sheetGame = null, deleteArmed = false;
+let sheetGame = null, armed = null;
+function deleteLabels() {
+  const g = sheetGame;
+  $("gs-delete").classList.toggle("hidden", !g.blob);
+  $("gs-delete-cloud").classList.toggle("hidden", !g.remote);
+  $("gs-delete-text").innerHTML = armed === "local" ? "แตะอีกครั้งเพื่อยืนยัน<small>ลบไฟล์เกมออกจากเครื่องนี้</small>"
+    : g.remote ? "ลบจากเครื่องนี้<small>ประหยัดพื้นที่ · ยังอยู่บนคลาวด์ ดาวน์โหลดใหม่ได้</small>"
+    : "ลบออกจากคลัง<small>เซฟในเกมยังเก็บไว้</small>";
+  $("gs-delete-cloud-text").innerHTML = armed === "cloud" ? "แตะอีกครั้งเพื่อยืนยัน<small>ลบไฟล์เกมออกจากคลาวด์ (เซฟยังอยู่)</small>"
+    : "ลบจากคลาวด์<small>เซฟในเกมบนคลาวด์ยังเก็บไว้</small>";
+}
 function openGameSheet(g) {
-  sheetGame = g; deleteArmed = false;
-  $("gs-delete-text").innerHTML = "ลบออกจากคลัง<small>เซฟในเกมยังเก็บไว้</small>";
+  sheetGame = g; armed = null;
+  deleteLabels();
+  const where = g.blob && g.remote ? "อยู่บนคลาวด์แล้ว" : g.blob ? (cloudCfg ? "รออัปโหลด" : "เฉพาะเครื่องนี้") : "บนคลาวด์ · ยังไม่ได้ดาวน์โหลด";
   $("gs-head").innerHTML = `${coverHTML(g, false)}
-    <div><h3>${esc(prettyName(g.name))}</h3><p>${system(g.name)} · ${size(g.blob.size)} · ${ago(g.lastPlayed)}</p></div>`;
+    <div><h3>${esc(prettyName(g.name))}</h3><p>${system(g.name)} · ${size(gameSize(g))} · ${where}</p></div>`;
+  $("gs-play").innerHTML = `<svg><use href="#i-play"/></svg>${g.blob ? "เล่น" : "ดาวน์โหลดแล้วเล่น"}`;
   openSheet("game-sheet");
 }
 $("gs-play").onclick = () => { closeSheets(); play(sheetGame); };
@@ -685,18 +769,28 @@ $("gs-cover").onclick = () => { $("cover-file").value = ""; $("cover-file").clic
 $("cover-file").addEventListener("change", async e => {
   const f = e.target.files[0];
   if (!f || !sheetGame) return;
-  sheetGame.cover = f; sheetGame.coverMiss = false;
-  await idb.put("roms", sheetGame.name, sheetGame);
+  await patchGame(sheetGame, { cover: f, coverMiss: false });
   closeSheets(); render(); toast("เปลี่ยนรูปปกแล้ว");
 });
 $("gs-delete").onclick = async () => {
-  if (!deleteArmed) {
-    deleteArmed = true;
-    $("gs-delete-text").innerHTML = "แตะอีกครั้งเพื่อยืนยันการลบ<small>ไฟล์เกมจะถูกลบออกจากเครื่องนี้</small>";
-    return;
-  }
-  await idb.del("roms", sheetGame.name);
-  closeSheets(); toast("ลบเกมออกจากคลังแล้ว"); loadLibrary();
+  if (armed !== "local") { armed = "local"; deleteLabels(); return; }
+  const g = sheetGame;
+  if (g.remote) { await patchGame(g, { blob: null }); toast("ลบจากเครื่องนี้แล้ว · ยังอยู่บนคลาวด์"); }
+  else { await idb.del("roms", g.name); toast("ลบเกมออกจากคลังแล้ว"); }
+  closeSheets(); loadLibrary();
+};
+$("gs-delete-cloud").onclick = async () => {
+  if (armed !== "cloud") { armed = "cloud"; deleteLabels(); return; }
+  const g = sheetGame;
+  closeSheets();
+  try {
+    setCloudPill("busy", "กำลังลบ…");
+    await Cloud.commit([{ path: "roms/" + g.name, sha: null }], `Remove game: ${g.name}`);
+    if (g.blob) await patchGame(g, { remote: null, cloudDeleted: true });
+    else await idb.del("roms", g.name);
+    setCloudPill("ok", "คลาวด์"); toast("ลบเกมออกจากคลาวด์แล้ว");
+    loadLibrary();
+  } catch (e) { Cloud.fail(e); }
 };
 
 // ---------- settings ----------
@@ -735,10 +829,18 @@ $("install-btn").onclick = async () => {
 updateInstall();
 
 // ---------- play ----------
+let downloading = false;
 async function play(g, saveFile) {
   if (!g) return;
-  g.lastPlayed = Date.now();
-  idb.put("roms", g.name, g).catch(() => {});
+  if (!g.blob) {                                   // game lives only in the cloud: fetch it first
+    if (!cloudCfg) { toast("เชื่อมคลาวด์ในการตั้งค่าก่อน เพื่อดาวน์โหลดเกมนี้"); return; }
+    if (downloading) return;
+    downloading = true; closeSheets();
+    try { await patchGame(g, { blob: await Cloud.downloadRom(g) }); }
+    catch (e) { downloading = false; Cloud.fail(e); toast("ดาวน์โหลดเกมไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+    downloading = false;
+  }
+  patchGame(g, { lastPlayed: Date.now() });
 
   const file = g.blob instanceof File ? g.blob : new File([g.blob], g.name);
   const ext = g.name.split(".").pop().toLowerCase();
@@ -922,6 +1024,87 @@ const Cloud = {
     finally { this.busy = false; }
   },
 
+  // ---- game files (roms/<file name>) ----
+  // Commit several file changes at once through the git data API ({path, sha} adds/updates, sha null deletes).
+  async commit(changes, message, attempt = 0) {
+    const repo = cloudCfg.repo, branch = cloudCfg.branch || "main";
+    const ref = await gh(`/repos/${repo}/git/ref/heads/${branch}`);
+    const head = await gh(`/repos/${repo}/git/commits/${ref.object.sha}`);
+    const tree = await gh(`/repos/${repo}/git/trees`, { method: "POST", body: JSON.stringify({
+      base_tree: head.tree.sha,
+      tree: changes.map(c => ({ path: c.path, mode: "100644", type: "blob", sha: c.sha })),
+    }) });
+    const commit = await gh(`/repos/${repo}/git/commits`, { method: "POST", body: JSON.stringify({ message, tree: tree.sha, parents: [head.sha] }) });
+    try {
+      await gh(`/repos/${repo}/git/refs/heads/${branch}`, { method: "PATCH", body: JSON.stringify({ sha: commit.sha }) });
+    } catch (e) {   // a save was committed at the same moment: rebuild on top of it
+      if (e.status === 422 && attempt < 3) return this.commit(changes, message, attempt + 1);
+      throw e;
+    }
+  },
+
+  async uploadRom(g) {
+    const bytes = new Uint8Array(await g.blob.arrayBuffer());
+    const blob = await gh(`/repos/${cloudCfg.repo}/git/blobs`, { method: "POST", body: JSON.stringify({ content: toB64(bytes), encoding: "base64" }) });
+    await this.commit([{ path: "roms/" + g.name, sha: blob.sha }], `Add game: ${g.name} (${device()})`);
+    return { sha: blob.sha, size: bytes.length };
+  },
+
+  async downloadRom(g) {
+    const total = g.remote?.size || 0;
+    const r = await fetch(`https://api.github.com/repos/${cloudCfg.repo}/git/blobs/${g.remote.sha}`, {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${cloudCfg.token}`, Accept: "application/vnd.github.raw+json", "X-GitHub-Api-Version": "2022-11-28" },
+    });
+    if (!r.ok) throw Object.assign(new Error("GitHub " + r.status), { status: r.status });
+    const reader = r.body.getReader(), chunks = [];
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value); got += value.length;
+      const pct = total ? Math.min(99, Math.round(got / total * 100)) : 0;
+      setCloudPill("busy", total ? `ดาวน์โหลด ${pct}%` : "กำลังดาวน์โหลด…");
+    }
+    setCloudPill("ok", "คลาวด์");
+    return new File(chunks, g.name);
+  },
+
+  // Bring the library in line with the cloud: list cloud games, upload local-only ones.
+  libraryBusy: false,
+  async syncLibrary() {
+    if (!cloudCfg || this.libraryBusy) return;
+    this.libraryBusy = true;
+    try {
+      const list = (await gh(`/repos/${cloudCfg.repo}/contents/roms`)) || [];
+      const remote = new Map(list.filter(f => f.type === "file" && isRom(f.name)).map(f => [f.name, { sha: f.sha, size: f.size }]));
+      const local = await idb.all("roms");
+      const byName = new Map(local.map(g => [g.name, g]));
+      for (const [name, info] of remote) {           // games added on another device
+        const g = byName.get(name);
+        if (!g) await idb.put("roms", name, { name, blob: null, added: 0, lastPlayed: 0, remote: info });
+        else if (g.remote?.sha !== info.sha || g.cloudDeleted) { g.remote = info; g.cloudDeleted = false; await idb.put("roms", name, g); }
+      }
+      for (const g of local) {
+        if (remote.has(g.name)) continue;
+        if (g.remote) {                                 // removed from the cloud on another device
+          if (!g.blob) { await idb.del("roms", g.name); continue; }
+          g.remote = null; g.cloudDeleted = true; await idb.put("roms", g.name, g);
+        }
+      }
+      await loadLibrary();
+      const toUpload = games.filter(g => g.blob && !g.remote && !g.cloudDeleted);
+      for (const g of toUpload) {
+        setCloudPill("busy", "อัปโหลดเกม…");
+        await patchGame(g, { remote: await this.uploadRom(g) });
+        toast(`เก็บ ${prettyName(g.name)} บนคลาวด์แล้ว`);
+      }
+      if (toUpload.length) await loadLibrary();
+      setCloudPill("ok", playing() ? "ซิงก์แล้ว" : "คลาวด์");
+    } catch (e) { this.fail(e); }
+    finally { this.libraryBusy = false; }
+  },
+
   startWatching() {
     if (!cloudCfg) return;
     clearInterval(this.timer);
@@ -953,15 +1136,17 @@ $("cloud-connect").onclick = async () => {
     const user = await gh("/user", {}, token);
     const repo = `${user.login}/${SAVES_REPO_NAME}`;
     const r = await gh(`/repos/${repo}`, {}, token);
-    if (!r) throw Object.assign(new Error("no repo"), { msg: `ไม่พบ repo ${repo} — ตอนสร้าง token ต้องเลือก repo นี้` });
+    if (!r) throw Object.assign(new Error("no repo"), { msg:
+      `token นี้ยังเข้าถึง ${repo} ไม่ได้ — แก้ token บน GitHub: Repository access → Only select repositories → เลือก gba-saves แล้วกดเชื่อมอีกครั้ง (ใช้ token เดิมได้)` });
     if (!r.private) throw Object.assign(new Error("public"), { msg: `repo ${repo} ต้องเป็น Private` });
-    cloudCfg = { token, repo };
+    cloudCfg = { token, repo, branch: r.default_branch || "main" };
     await idb.put("misc", "cloud", cloudCfg);
     $("cloud-token").value = "";
     renderCloudSettings();
-    toast("เชื่อมคลาวด์แล้ว เซฟจะซิงก์ตอนเปิดเกม");
+    toast("เชื่อมคลาวด์แล้ว");
+    Cloud.syncLibrary();
   } catch (e) {
-    renderCloudSettings(e.msg || (e.status === 401 ? "token ไม่ถูกต้อง" : "เชื่อมไม่ได้ ลองใหม่อีกครั้ง"));
+    renderCloudSettings(e.msg || (e.status === 401 ? "token ไม่ถูกต้องหรือหมดอายุ — คัดลอกใหม่จาก GitHub" : "เชื่อมไม่ได้ ลองใหม่อีกครั้ง"));
   }
   $("cloud-connect").disabled = false;
 };
@@ -975,9 +1160,24 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   navigator.serviceWorker.register("sw.js").catch(e => console.warn("SW not registered", e));
 }
 
-loadLibrary();
-loadBios();
-loadCloud();
+// ---------- theme ----------
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("gba-theme", t); } catch {}
+  document.querySelectorAll("[data-theme-opt]").forEach(b => b.classList.toggle("on", b.dataset.themeOpt === t));
+  const light = t === "light" || (t === "auto" && matchMedia("(prefers-color-scheme: light)").matches);
+  $("theme-color").content = light ? "#eef0fb" : "#07060d";
+}
+document.querySelectorAll("[data-theme-opt]").forEach(b => b.onclick = () => applyTheme(b.dataset.themeOpt));
+matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => applyTheme(document.documentElement.dataset.theme));
+applyTheme(document.documentElement.dataset.theme || "dark");
+
+(async () => {
+  await loadCloud();
+  await loadLibrary();
+  loadBios();
+  Cloud.syncLibrary();
+})();
 </script>
 </body>
 </html>
