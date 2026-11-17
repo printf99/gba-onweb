@@ -1131,9 +1131,11 @@ const haptic = (() => {
     label.click();
   };
 })();
-document.addEventListener("touchstart", e => {
-  if (playing() && e.target.closest?.(".ejs_virtualGamepad_button, .ejs_dpad_main, .pad-btn")) haptic();
-}, { capture: true, passive: true });
+// iOS only lets the switch tick fire from a user activation, and a finger landing (touchstart) isn't one;
+// lifting it (touchend) is. So iPhone ticks on release, Android (vibrate) on press.
+const padTouch = e => playing() && e.target.closest?.(".ejs_virtualGamepad_button, .ejs_dpad_main, .pad-btn");
+document.addEventListener("touchstart", e => { if (navigator.vibrate && padTouch(e)) haptic(); }, { capture: true, passive: true });
+document.addEventListener("touchend", e => { if (!navigator.vibrate && padTouch(e)) haptic(); }, { capture: true, passive: true });
 
 let pausedByMenu = false, restartArmed = false;
 const stateKey = () => "state:" + window.EJS_gameName;

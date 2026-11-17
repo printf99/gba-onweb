@@ -1,7 +1,7 @@
 // Offline support.
 // - App pages: network first (updates show up), cache as fallback.
 // - Pinned emulator files in ./emulatorjs never change: cache first.
-const SHELL = "gba-shell-v8";
+const SHELL = "gba-shell-v9";
 const EMU = "gba-emu-4.2.3";
 const FONTS = "gba-fonts-v1";
 const SHELL_FILES = [
