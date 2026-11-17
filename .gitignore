@@ -1,0 +1,7 @@
+.claude/
+*.gba
+*.gbc
+*.gb
+*.sav
+*.srm
+*.state
