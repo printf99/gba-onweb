@@ -12,6 +12,19 @@
     try { t = localStorage.getItem("gba-theme") || "dark"; } catch (e) {}
     document.documentElement.dataset.theme = t;
   })();
+  // iOS home-screen app with a translucent status bar: fixed elements and 100% heights can come up
+  // short by the status-bar height, leaving a black strip at the bottom. Measure that gap and let
+  // full-screen layers reach the real bottom edge (0 everywhere else, and 0 once iOS gets it right).
+  (function () {
+    if (navigator.standalone !== true) return;
+    const fit = () => {
+      const portrait = innerHeight >= innerWidth;
+      const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+      const gap = Math.max(0, Math.min(80, full - innerHeight));
+      document.documentElement.style.setProperty("--ios-gap", gap + "px");
+    };
+    fit(); addEventListener("resize", fit); addEventListener("orientationchange", () => setTimeout(fit, 300));
+  })();
 </script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
@@ -116,7 +129,7 @@
   .hidden { display: none !important; }
 
   /* ---------- living background behind the glass ---------- */
-  .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .bg { position: fixed; inset: 0 0 calc(-1 * var(--ios-gap, 0px)); z-index: -1; overflow: hidden; pointer-events: none; }
   .bg i { position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
     filter: blur(70px); opacity: var(--blob-opacity); animation: drift 26s ease-in-out infinite alternate; }
   .bg i:nth-child(1) { background: var(--blob-1); top: -20vmax; left: -15vmax; }
@@ -223,12 +236,12 @@
   .empty p { margin: 0 auto 22px; max-width: 340px; color: var(--text-2); line-height: 1.55; font-size: 15px; }
 
   /* floating add button */
-  .dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 18px);
+  .dock { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 18px - var(--ios-gap, 0px));
     z-index: 5; padding: 6px; border-radius: 999px; }
   .dock .btn { height: 52px; padding: 0 26px; font-size: 17px; }
 
   /* ---------- sheets ---------- */
-  .scrim { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.35);
+  .scrim { position: fixed; inset: 0 0 calc(-1 * var(--ios-gap, 0px)); z-index: 20; background: rgba(0,0,0,.35);
     display: flex; align-items: flex-end; justify-content: center;
     opacity: 0; pointer-events: none; transition: opacity .25s; }
   .scrim.open { opacity: 1; pointer-events: auto; }
@@ -311,7 +324,7 @@
   #toast.show { transform: translate(-50%, 0); }
 
   /* ---------- playing ---------- */
-  #player { display: none; position: fixed; inset: 0; flex-direction: column; background: #000; }
+  #player { display: none; position: fixed; inset: 0 0 calc(-1 * var(--ios-gap, 0px)); flex-direction: column; background: #000; }
   body.playing #player { display: flex; }
   body.playing #home, body.playing .dock { display: none; }
   .player-bar { display: flex; align-items: center; gap: 12px; flex: none;
